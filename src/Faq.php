@@ -52,7 +52,7 @@ class Faq
      * @param string $psVersion
      * @param string $isoCode
      */
-    public function __construct($moduleKey, $psVersion, $isoCode, array $options)
+    public function __construct($moduleKey, $psVersion, $isoCode, array $options = [])
     {
         $this->parameters = (new Parameters())
             ->setModuleKey($moduleKey)
@@ -93,6 +93,26 @@ class Faq
         $data = json_decode($response->getBody(), true);
 
         return !empty($data['categories']) ? $data : false;
+    }
+
+    /**
+     * @return Client
+     */
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    /**
+     * @param Client $client
+     *
+     * @return self
+     */
+    public function setClient(Client $client)
+    {
+        $this->client = $client;
+
+        return $this;
     }
 
     /**
