@@ -62,6 +62,8 @@ class Faq
         // Allow client options to be customized
         $options = array_merge_recursive([
             'base_url' => self::BASE_URL,
+            // If available from PrestaShop, use _PS_CACHE_CA_CERT_FILE_ constant
+            'verify' => defined('_PS_CACHE_CA_CERT_FILE_') ? constant('_PS_CACHE_CA_CERT_FILE_') : true,
             'defaults' => [
                 'timeout' => 10,
             ],
