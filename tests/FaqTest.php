@@ -22,9 +22,16 @@ namespace PrestaShop\ModuleLibFaq\Tests;
 
 use Exception;
 use GuzzleHttp\Message\Response;
+use GuzzleHttp\Psr7\Response as Psr7Response;
 use GuzzleHttp\Subscriber\Mock;
+use Http\Client\Exception\HttpException;
+use Http\Client\Exception\TransferException;
 use PHPUnit\Framework\TestCase;
 use PrestaShop\ModuleLibFaq\Faq;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Http\Mock\Client;
 
 class FaqTest extends TestCase
 {
@@ -34,10 +41,18 @@ class FaqTest extends TestCase
      */
     public function testWorkingTest()
     {
-        $faq = (new Faq('82bc76354cfef947e06f1cc78f5efe2e', '1.7.5.2', 'fr'))->getFaq();
+        $faq = new Faq('82bc76354cfef947e06f1cc78f5efe2e', '1.7.5.2', 'fr');
 
-        $this->assertInternalType('array', $faq);
-        $this->assertTrue(count($faq) > 0);
+        $faq->setClient(new class implements ClientInterface {
+            function sendRequest(RequestInterface $request): ResponseInterface
+            {
+                return new Psr7Response(200, [], file_get_contents('tests/faqExample.json'));
+            }
+        });
+        $faqContent = $faq->getFaq();
+
+        $this->assertInternalType('array', $faqContent);
+        $this->assertTrue(count($faqContent) > 0);
     }
 
     /**
@@ -46,15 +61,12 @@ class FaqTest extends TestCase
     public function testCallableIsTriggered()
     {
         $faq = (new Faq('<InvalidKey>', '1.7.5.2', 'fr'));
+        
+        $client = new Client;
+        $faq->setClient($client);
 
-        /**
-         * Mock of the API
-         */
-        $mock = new Mock([
-            new Response(500),
-        ]);
-        $faq->getClient()->getEmitter()->attach($mock);
-
+        $exception = new TransferException('Server error response [url] https://api.addons.prestashop.com/request/faq/%3CInvalidKey%3E/1.7.5.2/fr [status code] 500 [reason phrase] Internal Server Error');
+        $client->addException($exception);
         /**
          * we create here a callable that will be triggered because of the error during the API call.
          *
@@ -84,10 +96,12 @@ class FaqTest extends TestCase
         /**
          * Mock of the API
          */
-        $mock = new Mock([
-            new Response(200),
-        ]);
-        $faq->getClient()->getEmitter()->attach($mock);
+        $faq->setClient(new class implements ClientInterface {
+            function sendRequest(RequestInterface $request): ResponseInterface
+            {
+                return new Psr7Response(200);
+            }
+        });
 
         /**
          * Create error callable
