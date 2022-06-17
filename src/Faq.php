@@ -31,7 +31,7 @@ use Psr\Http\Client\ClientInterface;
  */
 class Faq
 {
-    const BASE_URL = 'https://api.addons.prestashop.com/request/faq/';
+    public const BASE_URL = 'https://api.addons.prestashop.com/request/faq/';
 
     /**
      * @var ClientInterface
@@ -93,6 +93,7 @@ class Faq
             if (is_callable($this->errorCallable)) {
                 call_user_func($this->errorCallable, $e);
             }
+
             return false;
         }
 

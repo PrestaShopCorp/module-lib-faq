@@ -21,17 +21,14 @@
 namespace PrestaShop\ModuleLibFaq\Tests;
 
 use Exception;
-use GuzzleHttp\Message\Response;
 use GuzzleHttp\Psr7\Response as Psr7Response;
-use GuzzleHttp\Subscriber\Mock;
-use Http\Client\Exception\HttpException;
 use Http\Client\Exception\TransferException;
+use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
 use PrestaShop\ModuleLibFaq\Faq;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Http\Mock\Client;
 
 class FaqTest extends TestCase
 {
@@ -43,8 +40,8 @@ class FaqTest extends TestCase
     {
         $faq = new Faq('82bc76354cfef947e06f1cc78f5efe2e', '1.7.5.2', 'fr');
 
-        $faq->setClient(new class implements ClientInterface {
-            function sendRequest(RequestInterface $request): ResponseInterface
+        $faq->setClient(new class() implements ClientInterface {
+            public function sendRequest(RequestInterface $request): ResponseInterface
             {
                 return new Psr7Response(200, [], file_get_contents('tests/faqExample.json'));
             }
@@ -61,8 +58,8 @@ class FaqTest extends TestCase
     public function testCallableIsTriggered()
     {
         $faq = (new Faq('<InvalidKey>', '1.7.5.2', 'fr'));
-        
-        $client = new Client;
+
+        $client = new Client();
         $faq->setClient($client);
 
         $exception = new TransferException('Server error response [url] https://api.addons.prestashop.com/request/faq/%3CInvalidKey%3E/1.7.5.2/fr [status code] 500 [reason phrase] Internal Server Error');
@@ -93,11 +90,11 @@ class FaqTest extends TestCase
     {
         $faq = (new Faq('<InvalidKey>', '1.7.5.2', 'fr'));
 
-        /**
+        /*
          * Mock of the API
          */
-        $faq->setClient(new class implements ClientInterface {
-            function sendRequest(RequestInterface $request): ResponseInterface
+        $faq->setClient(new class() implements ClientInterface {
+            public function sendRequest(RequestInterface $request): ResponseInterface
             {
                 return new Psr7Response(200);
             }
