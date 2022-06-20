@@ -20,18 +20,21 @@
 
 namespace PrestaShop\ModuleLibFaq;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
+use Http\Client\Exception\HttpException;
+use Http\Client\Exception\TransferException;
+use Prestashop\ModuleLibGuzzleAdapter\ClientFactory;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * Retrieve the FAQ of the module
  */
 class Faq
 {
-    const BASE_URL = 'https://api.addons.prestashop.com/request/faq/';
+    public const BASE_URL = 'https://api.addons.prestashop.com/request/faq/';
 
     /**
-     * @var Client
+     * @var ClientInterface
      */
     private $client;
 
@@ -69,7 +72,7 @@ class Faq
             ],
         ], $options);
 
-        $this->client = new Client($options);
+        $this->client = (new ClientFactory())->getClient($options);
     }
 
     /**
@@ -80,25 +83,27 @@ class Faq
     public function getFaq()
     {
         try {
-            $response = $this->client->post($this->parameters->getFaqUri());
-        } catch (RequestException $e) {
+            $response = $this->client->sendRequest(new Request('POST', $this->parameters->getFaqUri()));
+        } catch (HttpException $e) {
+            if (is_callable($this->errorCallable)) {
+                call_user_func($this->errorCallable, $e);
+            }
+            $response = $e->getResponse();
+        } catch (TransferException $e) {
             if (is_callable($this->errorCallable)) {
                 call_user_func($this->errorCallable, $e);
             }
 
-            if (!$e->hasResponse()) {
-                return false;
-            }
-            $response = $e->getResponse();
+            return false;
         }
 
-        $data = json_decode($response->getBody(), true);
+        $data = json_decode($response->getBody()->getContents(), true);
 
         return !empty($data['categories']) ? $data : false;
     }
 
     /**
-     * @return Client
+     * @return ClientInterface
      */
     public function getClient()
     {
@@ -106,11 +111,11 @@ class Faq
     }
 
     /**
-     * @param Client $client
+     * @param ClientInterface $client
      *
      * @return self
      */
-    public function setClient(Client $client)
+    public function setClient(ClientInterface $client)
     {
         $this->client = $client;
 
